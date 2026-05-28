@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クイズデータ自動変換＆一括登録ツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+        }
+        * { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8 font-sans text-slate-800">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- ヘッダー -->
+        <div class="bg-white rounded-2xl shadow-[4px_4px_0_0_#1e293b] p-6 border-4 border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <span class="text-4xl">🧬</span>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-black text-slate-900">クイズ自動生成＆一括登録ツール</h1>
+                    <p class="text-sm font-bold text-slate-500 mt-1">抽出メモから一瞬で4択クイズを作り、データベースへ転送します</p>
+                </div>
+            </div>
+            <!-- APIキー設定エリア -->
+            <div class="flex flex-col gap-1 shrink-0 bg-yellow-50 border-2 border-slate-800 p-3 rounded-xl shadow-[2px_2px_0_0_#1e293b] max-w-xs">
+                <label class="text-xs font-black text-slate-700 flex items-center gap-1">
+                    <span>🔑</span> Gemini APIキーを入力
+                </label>
+                <input type="password" id="api-key-input" placeholder="AIzaSy..." class="px-3 py-1.5 rounded-lg border-2 border-slate-800 text-xs font-bold focus:outline-none focus:bg-white bg-slate-50">
+                <p class="text-[9px] text-slate-500 font-bold leading-tight">※ブラウザに安全に一時保存されます。</p>
+            </div>
+        </div>
+
+        <!-- 2カラムメインエリア -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- 左カラム：AIクイズジェネレーター -->
+            <div class="lg:col-span-5 bg-white rounded-2xl shadow-[6px_6px_0_0_#1e293b] p-6 border-4 border-slate-800 space-y-4">
+                <div class="flex items-center gap-2 border-b-2 border-slate-200 pb-3">
+                    <span class="text-2xl">🤖</span>
+                    <h2 class="text-xl font-black text-slate-800">1. AIで4択クイズに自動変換</h2>
+                </div>
+                
+                <p class="text-xs font-bold text-slate-600 leading-relaxed bg-blue-50 border-2 border-blue-200 p-3 rounded-xl">
+                    テキストをここに貼り付けてください。AIが「カテゴリ分類」「ハズレ選択肢の考案」「豆知識解説」を自動で補完します。
+                </p>
+
+                <div>
+                    <label class="block text-xs font-black text-slate-700 mb-2">生の入力テキスト</label>
+                    <textarea id="raw-text-input" rows="12" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-bold text-sm transition-all resize-y" placeholder="【入力例】&#10;Q: 越前がにのオスのブランド名は？ A: 越前がに"></textarea>
+                </div>
+
+                <button id="generate-btn" class="w-full py-4 rounded-xl bg-emerald-500 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all text-base flex items-center justify-center gap-2">
+                    ✨ AIで4択クイズ（JSON）に変換する
+                </button>
+            </div>
+
+            <!-- 右カラム：一括登録エリア -->
+            <div class="lg:col-span-7 bg-white rounded-2xl shadow-[6px_6px_0_0_#1e293b] p-6 border-4 border-slate-800 space-y-4">
+                <div class="flex items-center gap-2 border-b-2 border-slate-200 pb-3">
+                    <span class="text-2xl">🔥</span>
+                    <h2 class="text-xl font-black text-slate-800">2. クイズJSON確認 ＆ Firestore登録</h2>
+                </div>
+
+                <!-- JSON出力/入力エリア -->
+                <div>
+                    <label class="block text-xs font-black text-slate-700 mb-2">アップロード用JSONデータ（確認・微調整用）</label>
+                    <textarea id="json-input" rows="15" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y" placeholder="[&#10;  {&#10;    &quot;id&quot;: &quot;g1&quot;,&#10;    &quot;category&quot;: &quot;グルメ&quot;,&#10;    &quot;question&quot;: &quot;問題文...&quot;,&#10;    &quot;options&quot;: [&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;],&#10;    &quot;answer&quot;: &quot;A&quot;,&#10;    &quot;explanation&quot;: &quot;解説文...&quot;&#10;  }&#10;]"></textarea>
+                </div>
+
+                <!-- Firestoreへの送信ボタン -->
+                <button id="upload-btn" class="w-full py-4 rounded-xl bg-blue-600 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all text-lg flex items-center justify-center gap-2">
+                    🚀 Firestoreに一括アップロード
+                </button>
+            </div>
+
+        </div>
+
+        <!-- 進捗・ログ・エラー出力エリア -->
+        <div id="status-message" class="p-4 rounded-xl font-bold hidden border-2"></div>
+
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+        // =====================================================================
+        // ⚠️ Firebase プロジェクトの設定
+        // =====================================================================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        let app, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+        } catch (error) {
+            showStatus("Firebaseの初期化に失敗しました。firebaseConfigの設定を確認してください。", "error");
+        }
+
+        const apiKeyInput = document.getElementById('api-key-input');
+        const rawTextInput = document.getElementById('raw-text-input');
+        const generateBtn = document.getElementById('generate-btn');
+        const jsonInput = document.getElementById('json-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        const statusDiv = document.getElementById('status-message');
+
+        const savedApiKey = localStorage.getItem('gemini_api_key');
+        if (savedApiKey) apiKeyInput.value = savedApiKey;
+
+        apiKeyInput.addEventListener('input', () => {
+            localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
+        });
+
+        function showStatus(message, type) {
+            statusDiv.className = 'p-4 rounded-xl font-bold border-2 block mt-6';
+            if (type === 'success') statusDiv.classList.add('bg-emerald-50', 'text-emerald-800', 'border-emerald-500');
+            else if (type === 'error') statusDiv.classList.add('bg-red-50', 'text-red-800', 'border-red-500');
+            else if (type === 'warn') statusDiv.classList.add('bg-yellow-50', 'text-yellow-800', 'border-yellow-500');
+            else statusDiv.classList.add('bg-blue-50', 'text-blue-800', 'border-blue-500');
+            statusDiv.innerHTML = message;
+            statusDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error?.message || `HTTPエラー ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                if (retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return fetchWithRetry(url, options, retries - 1, delay * 2);
+                }
+                throw error;
+            }
+        }
+
+        // ==========================================
+        // 🔄 AI変換（Gemini API）ロジック
+        // ==========================================
+        generateBtn.addEventListener('click', async () => {
+            const rawText = rawTextInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!rawText) return showStatus("⚠️ 左側にクイズのネタとなる文章を貼り付けてください。", "warn");
+            if (!apiKey) return showStatus("🔑 右上の「Gemini APIキー」を入力してください。", "warn");
+
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            showStatus("⏳ AIがクイズを構築し、JSONデータを生成しています...（通常5〜15秒）", "info");
+
+            // ⚠️ 別の地域のクイズを作る際はこちらを変更してください
+            const targetRegion = "福井県"; 
+
+            const systemPrompt = `あなたは「${targetRegion}ご当地クイズ」のクイズ制作・編集のトッププロフェッショナルです。
+ユーザーから提供されたクイズの「ネタ」や「Q&Aのテキスト」、「地域の資料テキスト」を読み込み、アプリへ一括登録するための「100%完璧なJSONデータ」に変換・拡張する役割を担います。
+
+【究極のルール】
+1. JSON以外のテキストは1文字も出力しないこと。挨拶やマークダウン装飾も禁止。純粋な [ から始まり ] で終わるJSON配列のみを出力すること。
+
+【処理フローとデータ整形ルール】
+1. カテゴリの分類: 必ず以下の7つのうち最も適したものを割り振ること。
+「自然・地理」「伝統工芸・ものづくり」「観光」「イベント・祭り」「方言」「歴史」「グルメ」
+2. 魅力的な「ハズレ選択肢」の自動生成（計4択）: 正解に対して、実在しそうな絶妙な難易度を持つハズレの選択肢を3つ考え、計4択の options を作成してください（optionsの中に必ず正解を含めること）。
+3. 「へぇ〜！」と唸る解説文の作成: 歴史的な背景、その地域ならではの習慣などを交え、解いた人が「なるほど！」と思えるような魅力的で知的な解説を2〜3文（100〜150文字程度）で作成してください。
+4. IDの付与: 問題には自動的に一意のID（例: q_001 など）を割り当ててください。`;
+
+            const responseSchema = {
+                type: "ARRAY",
+                description: "クイズオブジェクトのリスト",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        id: { type: "STRING" },
+                        category: { 
+                            type: "STRING", 
+                            enum: ["自然・地理", "伝統工芸・ものづくり", "観光", "イベント・祭り", "方言", "歴史", "グルメ"]
+                        },
+                        question: { type: "STRING" },
+                        options: { type: "ARRAY", items: { type: "STRING" } },
+                        answer: { type: "STRING" },
+                        explanation: { type: "STRING" }
+                    },
+                    required: ["id", "category", "question", "options", "answer", "explanation"]
+                }
+            };
+
+            const endpointUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            try {
+                const result = await fetchWithRetry(endpointUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: rawText }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            responseSchema: responseSchema
+                        }
+                    })
+                });
+
+                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!jsonText) throw new Error("AIからの応答テキストが空でした。");
+
+                jsonInput.value = JSON.stringify(JSON.parse(jsonText), null, 2);
+                showStatus("✨ AIによる自動クイズ生成が成功しました！", "success");
+            } catch (error) {
+                showStatus(`❌ クイズ生成に失敗しました。<br>エラー詳細: ${error.message}`, "error");
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        // ==========================================
+        // 🚀 Firestoreアップロードロジック
+        // ==========================================
+        uploadBtn.addEventListener('click', async () => {
+            if (!db) return showStatus("Firebaseが接続されていません。コード内の firebaseConfig を確認してください。", "error");
+
+            const rawData = jsonInput.value.trim();
+            if (!rawData) return showStatus("⚠️ アップロードするJSONデータがありません。", "warn");
+
+            let dataArray;
+            try {
+                dataArray = JSON.parse(rawData);
+                if (!Array.isArray(dataArray)) throw new Error("データは配列である必要があります。");
+            } catch (error) {
+                return showStatus(`❌ JSONの解析エラー: ${error.message}`, "error");
+            }
+
+            uploadBtn.disabled = true;
+            uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            showStatus(`⏳ ${dataArray.length}件のクイズデータをFirestoreへ送信しています...`, "info");
+
+            let successCount = 0;
+            try {
+                for (const item of dataArray) {
+                    const docId = item.id || `q_${Math.random().toString(36).substr(2, 9)}`;
+                    const finalItem = { ...item, id: docId };
+                    const docRef = doc(db, "quizzes", docId);
+                    await setDoc(docRef, finalItem);
+                    successCount++;
+                }
+                showStatus(`🎉 一括アップロードが完了しました！<br>${successCount}件のデータを <b>quizzes</b> コレクションへ保存しました。`, "success");
+                jsonInput.value = ''; 
+            } catch (error) {
+                showStatus(`❌ アップロード中にエラーが発生しました。<br>エラー詳細: ${error.message}`, "error");
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+    </script>
+</body>
+</html>
