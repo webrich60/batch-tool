@@ -53,7 +53,13 @@
                 </p>
 
                 <div>
-                    <label class="block text-xs font-black text-slate-700 mb-2">生の入力テキスト</label>
+                    <div class="flex justify-between items-end mb-2">
+                        <label class="block text-xs font-black text-slate-700">生の入力テキスト</label>
+                        <button id="clear-raw-text-btn" class="flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-red-600 transition-colors bg-white border-2 border-slate-300 px-2 py-1 rounded-md shadow-[2px_2px_0_0_#cbd5e1] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                            <span id="clear-raw-text-btn-text">クリア</span>
+                        </button>
+                    </div>
                     <textarea id="raw-text-input" rows="12" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-bold text-sm transition-all resize-y" placeholder="【入力例】&#10;Q: 越前がにのオスのブランド名は？ A: 越前がに"></textarea>
                 </div>
 
@@ -134,6 +140,8 @@
         const apiKeyInput = document.getElementById('api-key-input');
         const saveApiKeyBtn = document.getElementById('save-api-key-btn');
         const rawTextInput = document.getElementById('raw-text-input');
+        const clearRawTextBtn = document.getElementById('clear-raw-text-btn');
+        const clearRawTextBtnText = document.getElementById('clear-raw-text-btn-text');
         
         // 生成ボタン関連の要素
         const generateBtn = document.getElementById('generate-btn');
@@ -198,7 +206,28 @@
             }
         });
 
-        // クリアボタンを押したときの処理
+        // 左側のクリアボタンを押したときの処理
+        clearRawTextBtn.addEventListener('click', () => {
+            if (!rawTextInput.value.trim()) return;
+            
+            rawTextInput.value = '';
+            
+            // ボタンの見た目を一時的に変更して完了を伝える
+            const originalText = clearRawTextBtnText.textContent;
+            clearRawTextBtnText.textContent = "クリア完了";
+            clearRawTextBtn.classList.replace("text-slate-600", "text-red-600");
+            clearRawTextBtn.classList.replace("border-slate-300", "border-red-400");
+            clearRawTextBtn.classList.add("bg-red-50");
+            
+            setTimeout(() => {
+                clearRawTextBtnText.textContent = originalText;
+                clearRawTextBtn.classList.replace("text-red-600", "text-slate-600");
+                clearRawTextBtn.classList.replace("border-red-400", "border-slate-300");
+                clearRawTextBtn.classList.remove("bg-red-50");
+            }, 2000);
+        });
+
+        // 右側のクリアボタンを押したときの処理
         clearJsonBtn.addEventListener('click', () => {
             if (!jsonInput.value.trim()) return;
             
