@@ -58,7 +58,9 @@
                 </div>
 
                 <button id="generate-btn" class="w-full py-4 rounded-xl bg-emerald-500 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all text-base flex items-center justify-center gap-2">
-                    ✨ AIで4択クイズ（JSON）に変換する
+                    <span id="generate-btn-text">✨ AIで4択クイズ（JSON）に変換する</span>
+                    <!-- クルクル回るスピナー（初期状態は隠す） -->
+                    <svg id="generate-spinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 </button>
             </div>
 
@@ -71,13 +73,27 @@
 
                 <!-- JSON出力/入力エリア -->
                 <div>
-                    <label class="block text-xs font-black text-slate-700 mb-2">アップロード用JSONデータ（確認・微調整用）</label>
+                    <div class="flex justify-between items-end mb-2">
+                        <label class="block text-xs font-black text-slate-700">アップロード用JSONデータ（確認・微調整用）</label>
+                        <div class="flex gap-2">
+                            <button id="clear-json-btn" class="flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-red-600 transition-colors bg-white border-2 border-slate-300 px-2 py-1 rounded-md shadow-[2px_2px_0_0_#cbd5e1] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                                <span id="clear-btn-text">クリア</span>
+                            </button>
+                            <button id="copy-json-btn" class="flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-blue-600 transition-colors bg-white border-2 border-slate-300 px-2 py-1 rounded-md shadow-[2px_2px_0_0_#cbd5e1] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                                <span id="copy-btn-text">コピー</span>
+                            </button>
+                        </div>
+                    </div>
                     <textarea id="json-input" rows="15" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y" placeholder="[&#10;  {&#10;    &quot;id&quot;: &quot;g1&quot;,&#10;    &quot;category&quot;: &quot;グルメ&quot;,&#10;    &quot;question&quot;: &quot;問題文...&quot;,&#10;    &quot;options&quot;: [&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;],&#10;    &quot;answer&quot;: &quot;A&quot;,&#10;    &quot;explanation&quot;: &quot;解説文...&quot;&#10;  }&#10;]"></textarea>
                 </div>
 
                 <!-- Firestoreへの送信ボタン -->
                 <button id="upload-btn" class="w-full py-4 rounded-xl bg-blue-600 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all text-lg flex items-center justify-center gap-2">
-                    🚀 Firestoreに一括アップロード
+                    <span id="upload-btn-text">🚀 Firestoreに一括アップロード</span>
+                    <!-- クルクル回るスピナー（初期状態は隠す） -->
+                    <svg id="upload-spinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 </button>
             </div>
 
@@ -90,12 +106,11 @@
 
     <!-- Firebase SDK -->
     <script type="module">
-        // ★Firebase SDKのインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
         // =====================================================================
-        // 🔑 提供された本物のFirebase 設定コード
+        // ⚠️ Firebase プロジェクトの設定
         // =====================================================================
         const firebaseConfig = {
             apiKey: "AIzaSyD6V_544Yz1wmx9SwaYNm6MZBalUE808Bc",
@@ -109,24 +124,35 @@
 
         let app, db;
         try {
-            // Firebaseの初期化
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             console.log("🔥 Firebaseに正常に接続されました！");
         } catch (error) {
             showStatus("Firebaseの初期化に失敗しました。firebaseConfigの設定を確認してください。", "error");
-            console.error("Firebase Initialization Error:", error);
         }
 
         const apiKeyInput = document.getElementById('api-key-input');
         const saveApiKeyBtn = document.getElementById('save-api-key-btn');
         const rawTextInput = document.getElementById('raw-text-input');
+        
+        // 生成ボタン関連の要素
         const generateBtn = document.getElementById('generate-btn');
+        const generateBtnText = document.getElementById('generate-btn-text');
+        const generateSpinner = document.getElementById('generate-spinner');
+        
         const jsonInput = document.getElementById('json-input');
+        const copyJsonBtn = document.getElementById('copy-json-btn');
+        const copyBtnText = document.getElementById('copy-btn-text');
+        const clearJsonBtn = document.getElementById('clear-json-btn');
+        const clearBtnText = document.getElementById('clear-btn-text');
+        
+        // アップロードボタン関連の要素
         const uploadBtn = document.getElementById('upload-btn');
+        const uploadBtnText = document.getElementById('upload-btn-text');
+        const uploadSpinner = document.getElementById('upload-spinner');
+        
         const statusDiv = document.getElementById('status-message');
 
-        // 保存されたGemini APIキーの読み込み
         const savedApiKey = localStorage.getItem('gemini_api_key');
         if (savedApiKey) apiKeyInput.value = savedApiKey;
 
@@ -135,14 +161,64 @@
             const key = apiKeyInput.value.trim();
             if (key) {
                 localStorage.setItem('gemini_api_key', key);
-                showStatus("🔑 Gemini APIキーをブラウザに保存しました。次回から入力は不要です。", "info");
+                showStatus("🔑 APIキーをブラウザに保存しました。次回から入力は不要です。", "info");
             } else {
                 localStorage.removeItem('gemini_api_key');
-                showStatus("⚠️ Gemini APIキーの保存を解除しました。", "warn");
+                showStatus("⚠️ APIキーの保存を解除しました。", "warn");
             }
         });
 
-        // ログメッセージ表示関数
+        // コピーボタンを押したときの処理
+        copyJsonBtn.addEventListener('click', () => {
+            if (!jsonInput.value.trim()) {
+                showStatus("⚠️ コピーするJSONデータがありません。", "warn");
+                return;
+            }
+            try {
+                // テキストを選択してコピーを実行（iframe等のセキュリティ制約に強い方法）
+                jsonInput.select();
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges();
+                
+                // ボタンの見た目を一時的に変更して完了を伝える
+                const originalText = copyBtnText.textContent;
+                copyBtnText.textContent = "コピー完了！";
+                copyJsonBtn.classList.replace("text-slate-600", "text-emerald-600");
+                copyJsonBtn.classList.replace("border-slate-300", "border-emerald-400");
+                copyJsonBtn.classList.add("bg-emerald-50");
+                
+                setTimeout(() => {
+                    copyBtnText.textContent = originalText;
+                    copyJsonBtn.classList.replace("text-emerald-600", "text-slate-600");
+                    copyJsonBtn.classList.replace("border-emerald-400", "border-slate-300");
+                    copyJsonBtn.classList.remove("bg-emerald-50");
+                }, 2000);
+            } catch (err) {
+                showStatus("❌ コピーに失敗しました。", "error");
+            }
+        });
+
+        // クリアボタンを押したときの処理
+        clearJsonBtn.addEventListener('click', () => {
+            if (!jsonInput.value.trim()) return;
+            
+            jsonInput.value = '';
+            
+            // ボタンの見た目を一時的に変更して完了を伝える
+            const originalText = clearBtnText.textContent;
+            clearBtnText.textContent = "クリア完了";
+            clearJsonBtn.classList.replace("text-slate-600", "text-red-600");
+            clearJsonBtn.classList.replace("border-slate-300", "border-red-400");
+            clearJsonBtn.classList.add("bg-red-50");
+            
+            setTimeout(() => {
+                clearBtnText.textContent = originalText;
+                clearJsonBtn.classList.replace("text-red-600", "text-slate-600");
+                clearJsonBtn.classList.replace("border-red-400", "border-slate-300");
+                clearJsonBtn.classList.remove("bg-red-50");
+            }, 2000);
+        });
+
         function showStatus(message, type) {
             statusDiv.className = 'p-4 rounded-xl font-bold border-2 block mt-6';
             if (type === 'success') statusDiv.classList.add('bg-emerald-50', 'text-emerald-800', 'border-emerald-500');
@@ -153,7 +229,6 @@
             statusDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
-        // Gemini API呼び出し用のリトライ処理
         async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
             try {
                 const response = await fetch(url, options);
@@ -179,13 +254,17 @@
             const apiKey = apiKeyInput.value.trim();
 
             if (!rawText) return showStatus("⚠️ 左側にクイズのネタとなる文章を貼り付けてください。", "warn");
-            if (!apiKey) return showStatus("🔑 右上の「Gemini APIキー」を入力して保存してください。", "warn");
+            if (!apiKey) return showStatus("🔑 右上の「Gemini APIキー」を入力してください。", "warn");
 
+            // UIを「処理中」の状態に変更
             generateBtn.disabled = true;
-            generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            generateBtn.classList.add('opacity-80', 'cursor-not-allowed', 'animate-pulse');
+            generateBtn.classList.remove('active:translate-y-[4px]', 'active:translate-x-[4px]', 'active:shadow-none');
+            generateBtnText.textContent = 'AIで変換中...';
+            generateSpinner.classList.remove('hidden');
+
             showStatus("⏳ AIがクイズを構築し、JSONデータを生成しています...（通常5〜15秒）", "info");
 
-            // ⚠️ 別の地域のクイズを作る際はこちらを変更してください
             const targetRegion = "福井県"; 
 
             const systemPrompt = `あなたは「${targetRegion}ご当地クイズ」のクイズ制作・編集のトッププロフェッショナルです。
@@ -221,7 +300,6 @@
                 }
             };
 
-            // 正しいモデル名（gemini-2.5-flash）を指定
             const endpointUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
             try {
@@ -246,8 +324,12 @@
             } catch (error) {
                 showStatus(`❌ クイズ生成に失敗しました。<br>エラー詳細: ${error.message}`, "error");
             } finally {
+                // UIを元の状態に戻す
                 generateBtn.disabled = false;
-                generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                generateBtn.classList.remove('opacity-80', 'cursor-not-allowed', 'animate-pulse');
+                generateBtn.classList.add('active:translate-y-[4px]', 'active:translate-x-[4px]', 'active:shadow-none');
+                generateBtnText.textContent = '✨ AIで4択クイズ（JSON）に変換する';
+                generateSpinner.classList.add('hidden');
             }
         });
 
@@ -255,47 +337,48 @@
         // 🚀 Firestoreアップロードロジック
         // ==========================================
         uploadBtn.addEventListener('click', async () => {
-            if (!db) return showStatus("❌ Firebaseが正しく初期化されていません。鍵(firebaseConfig)の設定に誤りがある可能性があります。", "error");
+            if (!db) return showStatus("Firebaseが接続されていません。コード内の firebaseConfig を確認してください。", "error");
 
             const rawData = jsonInput.value.trim();
-            if (!rawData) return showStatus("⚠️ アップロードするJSONデータがありません。先にAIで生成するか、手動で貼り付けてください。", "warn");
+            if (!rawData) return showStatus("⚠️ アップロードするJSONデータがありません。", "warn");
 
             let dataArray;
             try {
                 dataArray = JSON.parse(rawData);
-                if (!Array.isArray(dataArray)) throw new Error("データは配列（ [ ] で囲まれた形式 ）である必要があります。");
+                if (!Array.isArray(dataArray)) throw new Error("データは配列である必要があります。");
             } catch (error) {
-                return showStatus(`❌ JSONの解析エラー: ${error.message}<br>データの形式が正しくありません。`, "error");
+                return showStatus(`❌ JSONの解析エラー: ${error.message}`, "error");
             }
 
+            // UIを「処理中」の状態に変更
             uploadBtn.disabled = true;
-            uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            showStatus(`⏳ ${dataArray.length}件のクイズデータをFirestore（データベース）へ送信しています...`, "info");
+            uploadBtn.classList.add('opacity-80', 'cursor-not-allowed', 'animate-pulse');
+            uploadBtn.classList.remove('active:translate-y-[4px]', 'active:translate-x-[4px]', 'active:shadow-none');
+            uploadBtnText.textContent = 'アップロード中...';
+            uploadSpinner.classList.remove('hidden');
+
+            showStatus(`⏳ ${dataArray.length}件のクイズデータをFirestoreへ送信しています...`, "info");
 
             let successCount = 0;
             try {
                 for (const item of dataArray) {
-                    // IDがない場合はランダムに生成
                     const docId = item.id || `q_${Math.random().toString(36).substr(2, 9)}`;
                     const finalItem = { ...item, id: docId };
-                    
-                    // Firestoreの「quizzes」コレクションの中のドキュメント（問題データ）として保存
                     const docRef = doc(db, "quizzes", docId);
                     await setDoc(docRef, finalItem);
                     successCount++;
                 }
-                
-                showStatus(`🎉 一括アップロードが完了しました！<br>${successCount}件のデータを <b>quizzes</b> コレクションへ無事に保存しました。`, "success");
-                
-                // アップロード成功後、安全のためにテキストエリアをクリア
+                showStatus(`🎉 一括アップロードが完了しました！<br>${successCount}件のデータを <b>quizzes</b> コレクションへ保存しました。`, "success");
                 jsonInput.value = ''; 
-                
             } catch (error) {
-                showStatus(`❌ アップロード中にエラーが発生しました。<br>エラー詳細: ${error.message}<br>※セキュリティルールの設定で書き込みがブロックされている可能性があります。`, "error");
-                console.error("Firestore Upload Error:", error);
+                showStatus(`❌ アップロード中にエラーが発生しました。<br>エラー詳細: ${error.message}`, "error");
             } finally {
+                // UIを元の状態に戻す
                 uploadBtn.disabled = false;
-                uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                uploadBtn.classList.remove('opacity-80', 'cursor-not-allowed', 'animate-pulse');
+                uploadBtn.classList.add('active:translate-y-[4px]', 'active:translate-x-[4px]', 'active:shadow-none');
+                uploadBtnText.textContent = '🚀 Firestoreに一括アップロード';
+                uploadSpinner.classList.add('hidden');
             }
         });
     </script>
