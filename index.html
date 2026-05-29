@@ -391,9 +391,10 @@
             let successCount = 0;
             try {
                 for (const item of dataArray) {
-                    const docId = item.id || `q_${Math.random().toString(36).substr(2, 9)}`;
-                    const finalItem = { ...item, id: docId };
-                    const docRef = doc(db, "quizzes", docId);
+                    // AIが振ったIDを無視し、絶対に被らない一意のID（現在時刻＋ランダム文字列）を生成
+                    const uniqueId = `q_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 5)}`;
+                    const finalItem = { ...item, id: uniqueId };
+                    const docRef = doc(db, "quizzes", uniqueId);
                     await setDoc(docRef, finalItem);
                     successCount++;
                 }
