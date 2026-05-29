@@ -90,27 +90,32 @@
 
     <!-- Firebase SDK -->
     <script type="module">
+        // ★Firebase SDKのインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
         // =====================================================================
-        // ⚠️ Firebase プロジェクトの設定
+        // 🔑 提供された本物のFirebase 設定コード
         // =====================================================================
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyD6V_544Yz1wmx9SwaYNm6MZBalUE808Bc",
+            authDomain: "fukui-test-3d53f.firebaseapp.com",
+            projectId: "fukui-test-3d53f",
+            storageBucket: "fukui-test-3d53f.firebasestorage.app",
+            messagingSenderId: "679373035685",
+            appId: "1:679373035685:web:0bc85230b96f925f0cd54c",
+            measurementId: "G-RD5YWEDR1K"
         };
 
         let app, db;
         try {
+            // Firebaseの初期化
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
+            console.log("🔥 Firebaseに正常に接続されました！");
         } catch (error) {
             showStatus("Firebaseの初期化に失敗しました。firebaseConfigの設定を確認してください。", "error");
+            console.error("Firebase Initialization Error:", error);
         }
 
         const apiKeyInput = document.getElementById('api-key-input');
@@ -121,6 +126,7 @@
         const uploadBtn = document.getElementById('upload-btn');
         const statusDiv = document.getElementById('status-message');
 
+        // 保存されたGemini APIキーの読み込み
         const savedApiKey = localStorage.getItem('gemini_api_key');
         if (savedApiKey) apiKeyInput.value = savedApiKey;
 
@@ -129,13 +135,14 @@
             const key = apiKeyInput.value.trim();
             if (key) {
                 localStorage.setItem('gemini_api_key', key);
-                showStatus("🔑 APIキーをブラウザに保存しました。次回から入力は不要です。", "info");
+                showStatus("🔑 Gemini APIキーをブラウザに保存しました。次回から入力は不要です。", "info");
             } else {
                 localStorage.removeItem('gemini_api_key');
-                showStatus("⚠️ APIキーの保存を解除しました。", "warn");
+                showStatus("⚠️ Gemini APIキーの保存を解除しました。", "warn");
             }
         });
 
+        // ログメッセージ表示関数
         function showStatus(message, type) {
             statusDiv.className = 'p-4 rounded-xl font-bold border-2 block mt-6';
             if (type === 'success') statusDiv.classList.add('bg-emerald-50', 'text-emerald-800', 'border-emerald-500');
@@ -146,6 +153,7 @@
             statusDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
+        // Gemini API呼び出し用のリトライ処理
         async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
             try {
                 const response = await fetch(url, options);
@@ -171,7 +179,7 @@
             const apiKey = apiKeyInput.value.trim();
 
             if (!rawText) return showStatus("⚠️ 左側にクイズのネタとなる文章を貼り付けてください。", "warn");
-            if (!apiKey) return showStatus("🔑 右上の「Gemini APIキー」を入力してください。", "warn");
+            if (!apiKey) return showStatus("🔑 右上の「Gemini APIキー」を入力して保存してください。", "warn");
 
             generateBtn.disabled = true;
             generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -213,7 +221,7 @@
                 }
             };
 
-            // ここを正しく gemini-2.5-flash に修正しました
+            // 正しいモデル名（gemini-2.5-flash）を指定
             const endpointUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
             try {
@@ -247,36 +255,44 @@
         // 🚀 Firestoreアップロードロジック
         // ==========================================
         uploadBtn.addEventListener('click', async () => {
-            if (!db) return showStatus("Firebaseが接続されていません。コード内の firebaseConfig を確認してください。", "error");
+            if (!db) return showStatus("❌ Firebaseが正しく初期化されていません。鍵(firebaseConfig)の設定に誤りがある可能性があります。", "error");
 
             const rawData = jsonInput.value.trim();
-            if (!rawData) return showStatus("⚠️ アップロードするJSONデータがありません。", "warn");
+            if (!rawData) return showStatus("⚠️ アップロードするJSONデータがありません。先にAIで生成するか、手動で貼り付けてください。", "warn");
 
             let dataArray;
             try {
                 dataArray = JSON.parse(rawData);
-                if (!Array.isArray(dataArray)) throw new Error("データは配列である必要があります。");
+                if (!Array.isArray(dataArray)) throw new Error("データは配列（ [ ] で囲まれた形式 ）である必要があります。");
             } catch (error) {
-                return showStatus(`❌ JSONの解析エラー: ${error.message}`, "error");
+                return showStatus(`❌ JSONの解析エラー: ${error.message}<br>データの形式が正しくありません。`, "error");
             }
 
             uploadBtn.disabled = true;
             uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            showStatus(`⏳ ${dataArray.length}件のクイズデータをFirestoreへ送信しています...`, "info");
+            showStatus(`⏳ ${dataArray.length}件のクイズデータをFirestore（データベース）へ送信しています...`, "info");
 
             let successCount = 0;
             try {
                 for (const item of dataArray) {
+                    // IDがない場合はランダムに生成
                     const docId = item.id || `q_${Math.random().toString(36).substr(2, 9)}`;
                     const finalItem = { ...item, id: docId };
+                    
+                    // Firestoreの「quizzes」コレクションの中のドキュメント（問題データ）として保存
                     const docRef = doc(db, "quizzes", docId);
                     await setDoc(docRef, finalItem);
                     successCount++;
                 }
-                showStatus(`🎉 一括アップロードが完了しました！<br>${successCount}件のデータを <b>quizzes</b> コレクションへ保存しました。`, "success");
+                
+                showStatus(`🎉 一括アップロードが完了しました！<br>${successCount}件のデータを <b>quizzes</b> コレクションへ無事に保存しました。`, "success");
+                
+                // アップロード成功後、安全のためにテキストエリアをクリア
                 jsonInput.value = ''; 
+                
             } catch (error) {
-                showStatus(`❌ アップロード中にエラーが発生しました。<br>エラー詳細: ${error.message}`, "error");
+                showStatus(`❌ アップロード中にエラーが発生しました。<br>エラー詳細: ${error.message}<br>※セキュリティルールの設定で書き込みがブロックされている可能性があります。`, "error");
+                console.error("Firestore Upload Error:", error);
             } finally {
                 uploadBtn.disabled = false;
                 uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
