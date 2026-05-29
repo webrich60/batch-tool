@@ -92,7 +92,7 @@
                             </button>
                         </div>
                     </div>
-                    <textarea id="json-input" rows="15" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y" placeholder="[&#10;  {&#10;    &quot;id&quot;: &quot;g1&quot;,&#10;    &quot;category&quot;: &quot;グルメ&quot;,&#10;    &quot;question&quot;: &quot;問題文...&quot;,&#10;    &quot;options&quot;: [&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;],&#10;    &quot;answer&quot;: &quot;A&quot;,&#10;    &quot;explanation&quot;: &quot;解説文...&quot;&#10;  }&#10;]"></textarea>
+                    <textarea id="json-input" rows="15" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y" placeholder="[&#10;  {&#10;    &quot;category&quot;: &quot;グルメ&quot;,&#10;    &quot;question&quot;: &quot;問題文...&quot;,&#10;    &quot;options&quot;: [&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;],&#10;    &quot;answer&quot;: &quot;A&quot;,&#10;    &quot;explanation&quot;: &quot;解説文...&quot;&#10;  }&#10;]"></textarea>
                 </div>
 
                 <!-- Firestoreへの送信ボタン -->
@@ -113,7 +113,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
         // =====================================================================
         // ⚠️ Firebase プロジェクトの設定
@@ -143,7 +143,6 @@
         const clearRawTextBtn = document.getElementById('clear-raw-text-btn');
         const clearRawTextBtnText = document.getElementById('clear-raw-text-btn-text');
         
-        // 生成ボタン関連の要素
         const generateBtn = document.getElementById('generate-btn');
         const generateBtnText = document.getElementById('generate-btn-text');
         const generateSpinner = document.getElementById('generate-spinner');
@@ -154,7 +153,6 @@
         const clearJsonBtn = document.getElementById('clear-json-btn');
         const clearBtnText = document.getElementById('clear-btn-text');
         
-        // アップロードボタン関連の要素
         const uploadBtn = document.getElementById('upload-btn');
         const uploadBtnText = document.getElementById('upload-btn-text');
         const uploadSpinner = document.getElementById('upload-spinner');
@@ -164,7 +162,6 @@
         const savedApiKey = localStorage.getItem('gemini_api_key');
         if (savedApiKey) apiKeyInput.value = savedApiKey;
 
-        // 保存ボタンを押したときの処理
         saveApiKeyBtn.addEventListener('click', () => {
             const key = apiKeyInput.value.trim();
             if (key) {
@@ -176,19 +173,16 @@
             }
         });
 
-        // コピーボタンを押したときの処理
         copyJsonBtn.addEventListener('click', () => {
             if (!jsonInput.value.trim()) {
                 showStatus("⚠️ コピーするJSONデータがありません。", "warn");
                 return;
             }
             try {
-                // テキストを選択してコピーを実行（iframe等のセキュリティ制約に強い方法）
                 jsonInput.select();
                 document.execCommand('copy');
                 window.getSelection().removeAllRanges();
                 
-                // ボタンの見た目を一時的に変更して完了を伝える
                 const originalText = copyBtnText.textContent;
                 copyBtnText.textContent = "コピー完了！";
                 copyJsonBtn.classList.replace("text-slate-600", "text-emerald-600");
@@ -206,13 +200,11 @@
             }
         });
 
-        // 左側のクリアボタンを押したときの処理
         clearRawTextBtn.addEventListener('click', () => {
             if (!rawTextInput.value.trim()) return;
             
             rawTextInput.value = '';
             
-            // ボタンの見た目を一時的に変更して完了を伝える
             const originalText = clearRawTextBtnText.textContent;
             clearRawTextBtnText.textContent = "クリア完了";
             clearRawTextBtn.classList.replace("text-slate-600", "text-red-600");
@@ -227,13 +219,11 @@
             }, 2000);
         });
 
-        // 右側のクリアボタンを押したときの処理
         clearJsonBtn.addEventListener('click', () => {
             if (!jsonInput.value.trim()) return;
             
             jsonInput.value = '';
             
-            // ボタンの見た目を一時的に変更して完了を伝える
             const originalText = clearBtnText.textContent;
             clearBtnText.textContent = "クリア完了";
             clearJsonBtn.classList.replace("text-slate-600", "text-red-600");
@@ -285,7 +275,6 @@
             if (!rawText) return showStatus("⚠️ 左側にクイズのネタとなる文章を貼り付けてください。", "warn");
             if (!apiKey) return showStatus("🔑 右上の「Gemini APIキー」を入力してください。", "warn");
 
-            // UIを「処理中」の状態に変更
             generateBtn.disabled = true;
             generateBtn.classList.add('opacity-80', 'cursor-not-allowed', 'animate-pulse');
             generateBtn.classList.remove('active:translate-y-[4px]', 'active:translate-x-[4px]', 'active:shadow-none');
@@ -306,8 +295,7 @@
 1. カテゴリの分類: 必ず以下の7つのうち最も適したものを割り振ること。
 「自然・地理」「伝統工芸・ものづくり」「観光」「イベント・祭り」「方言」「歴史」「グルメ」
 2. 魅力的な「ハズレ選択肢」の自動生成（計4択）: 正解に対して、実在しそうな絶妙な難易度を持つハズレの選択肢を3つ考え、計4択の options を作成してください（optionsの中に必ず正解を含めること）。
-3. 「へぇ〜！」と唸る解説文の作成: 歴史的な背景、その地域ならではの習慣などを交え、解いた人が「なるほど！」と思えるような魅力的で知的な解説を2〜3文（100〜150文字程度）で作成してください。
-4. IDの付与: 問題には自動的に一意のID（例: q_001 など）を割り当ててください。`;
+3. 「へぇ〜！」と唸る解説文の作成: 歴史的な背景、その地域ならではの習慣などを交え、解いた人が「なるほど！」と思えるような魅力的で知的な解説を2〜3文（100〜150文字程度）で作成してください。`;
 
             const responseSchema = {
                 type: "ARRAY",
@@ -315,7 +303,6 @@
                 items: {
                     type: "OBJECT",
                     properties: {
-                        id: { type: "STRING" },
                         category: { 
                             type: "STRING", 
                             enum: ["自然・地理", "伝統工芸・ものづくり", "観光", "イベント・祭り", "方言", "歴史", "グルメ"]
@@ -325,7 +312,7 @@
                         answer: { type: "STRING" },
                         explanation: { type: "STRING" }
                     },
-                    required: ["id", "category", "question", "options", "answer", "explanation"]
+                    required: ["category", "question", "options", "answer", "explanation"]
                 }
             };
 
@@ -353,7 +340,6 @@
             } catch (error) {
                 showStatus(`❌ クイズ生成に失敗しました。<br>エラー詳細: ${error.message}`, "error");
             } finally {
-                // UIを元の状態に戻す
                 generateBtn.disabled = false;
                 generateBtn.classList.remove('opacity-80', 'cursor-not-allowed', 'animate-pulse');
                 generateBtn.classList.add('active:translate-y-[4px]', 'active:translate-x-[4px]', 'active:shadow-none');
@@ -379,7 +365,6 @@
                 return showStatus(`❌ JSONの解析エラー: ${error.message}`, "error");
             }
 
-            // UIを「処理中」の状態に変更
             uploadBtn.disabled = true;
             uploadBtn.classList.add('opacity-80', 'cursor-not-allowed', 'animate-pulse');
             uploadBtn.classList.remove('active:translate-y-[4px]', 'active:translate-x-[4px]', 'active:shadow-none');
@@ -390,12 +375,18 @@
 
             let successCount = 0;
             try {
+                // 📂 データを保存する「大部屋（コレクション）」を指定
+                const quizzesColRef = collection(db, "quizzes"); 
+
                 for (const item of dataArray) {
-                    // AIが振ったIDを無視し、絶対に被らない一意のID（現在時刻＋ランダム文字列）を生成
-                    const uniqueId = `q_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 5)}`;
-                    const finalItem = { ...item, id: uniqueId };
-                    const docRef = doc(db, "quizzes", uniqueId);
-                    await setDoc(docRef, finalItem);
+                    // ★最重要★
+                    // Firestore純正の「絶対に被らない完全ランダムなID（20桁の英数字）」を自動で発行してもらう
+                    const newDocRef = doc(quizzesColRef); 
+                    
+                    // 自動発行されたランダムIDをデータの中身にセットし、Firestoreへ保存
+                    const finalItem = { ...item, id: newDocRef.id };
+                    await setDoc(newDocRef, finalItem);
+                    
                     successCount++;
                 }
                 showStatus(`🎉 一括アップロードが完了しました！<br>${successCount}件のデータを <b>quizzes</b> コレクションへ保存しました。`, "success");
@@ -403,7 +394,6 @@
             } catch (error) {
                 showStatus(`❌ アップロード中にエラーが発生しました。<br>エラー詳細: ${error.message}`, "error");
             } finally {
-                // UIを元の状態に戻す
                 uploadBtn.disabled = false;
                 uploadBtn.classList.remove('opacity-80', 'cursor-not-allowed', 'animate-pulse');
                 uploadBtn.classList.add('active:translate-y-[4px]', 'active:translate-x-[4px]', 'active:shadow-none');
